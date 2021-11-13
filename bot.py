@@ -11,10 +11,12 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 PORT = int(os.environ.get('PORT', '8443'))
+
+# Hide the telegram bot token
+TOKEN = os.environ["TOKEN"]
+
 # Define a few command handlers. These usually take the two arguments update and
 # context. Error handlers also receive the raised TelegramError object in error.
-
-
 def get_last_post():
     """Gets the info about the last post"""
     url = "https://instagram40.p.rapidapi.com/account-feed"
@@ -98,7 +100,7 @@ def main():
     # Create the Updater and pass it your bot's token.
     # Make sure to set use_context=True to use the new context based callbacks
     # Post version 12 this will no longer be necessary
-    updater = Updater("2131608210:AAEmy7BudYPAFolwmtbqSb1lMKf2MFv1GTo", use_context=True)
+    updater = Updater(TOKEN, use_context=True)
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
@@ -121,8 +123,8 @@ def main():
     # Start the Bot
     updater.start_webhook(listen="0.0.0.0",
                           port=PORT,
-                          url_path="2131608210:AAEmy7BudYPAFolwmtbqSb1lMKf2MFv1GTo",
-                          webhook_url="https://niskostanaycounsellingbot.herokuapp.com/" + "2131608210:AAEmy7BudYPAFolwmtbqSb1lMKf2MFv1GTo")
+                          url_path=TOKEN,
+                          webhook_url="https://niskostanaycounsellingbot.herokuapp.com/" + TOKEN)
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
