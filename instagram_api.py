@@ -14,7 +14,7 @@ def get_acc_feed():
     response = requests.request("GET", url, headers=headers, params=querystring)
     return response.json()
 
-
+# working on it...
 while(True):
 
     acc_feed = get_acc_feed()
