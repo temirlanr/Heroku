@@ -107,8 +107,8 @@ def bio(update: Update, context: CallbackContext) -> int:
     return ConversationHandler.END
 
 
-def cancel(update: Update, context: CallbackContext) -> int:
-    """Cancels and ends the conversation."""
+def fake_cancel(update: Update, context: CallbackContext) -> int:
+    """Cancels and ends the conversationn."""
     user = update.message.from_user
     logger.info("User %s canceled the conversation.", user.first_name)
     update.message.reply_text(
@@ -119,6 +119,8 @@ def cancel(update: Update, context: CallbackContext) -> int:
 
 # Define a few command handlers. These usually take the two arguments update and
 # context. Error handlers also receive the raised TelegramError object in error.
+SUGGESTION, COMPLAINT, QUESTION, BOT_FEEDBACK, PRIVATE = range(5)
+
 def get_last_post():
     """Gets the info about the last post"""
     url = "https://instagram40.p.rapidapi.com/account-feed"
@@ -159,36 +161,115 @@ def help(update, context):
 /complaint - если вас что-то не устраивает в нашей школе, вызовите эту команду
 /question - если у вас есть вопрос к Student Council, задавайте сюда
 /bot_feedback - любые предложение/жалобы/вопросы/благодарности по боту
-Последние 5 команд должны быть в формате /(команда) текст. Например, /suggestion хотелось бы провести киновечер.
+
 В других случаях бот отправляет ваши сообщения в группу NIS Kostanay анонимно, где его видят все присутствующие в этой беседе. Это можно использовать в различных целях, например, признаться кому-либо в своих чувствах, либо просто поделиться чем-нибудь, не раскрывая свою личность. 
 Просьба воздержаться от нецензурной лексики, рекламы, флуда и спама. Подобные сообщения будут немедленно удаляться. Заранее благодарим!
     """
     )
 
 
-def suggestion(update, context):
+def suggestion(update: Update, context: CallbackContext) -> int:
     """Handles the /suggestion command"""
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Что бы вы хотели предложить?")
+
+    return SUGGESTION
+
+
+def suggestion_handler(update: Update, context: CallbackContext) -> int:
+    """Sends feedback or other commands to Admins chat"""
     context.bot.send_message(chat_id=-1001096346677, text=str(update.message.text)+"\n#suggestion")
+    update.message.reply_text('Спасибо! Мы обязательно это рассмотрим.')
+
+    return ConversationHandler.END
 
 
-def complaint(update, context):
+def complaint(update: Update, context: CallbackContext) -> int:
     """Handles the /complaint command"""
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Что вас не устраивает? Критикуйте! Мы умеем принимать критику.")
+
+    return COMPLAINT
+
+
+def complaint_handler(update: Update, context: CallbackContext) -> int:
+    """Sends feedback or other commands to Admins chat"""
     context.bot.send_message(chat_id=-1001096346677, text=str(update.message.text)+"\n#complaint")
+    update.message.reply_text('Спасибо! Мы обязательно это учтем.')
+
+    return ConversationHandler.END
 
 
-def question(update, context):
+def question(update: Update, context: CallbackContext) -> int:
     """Handles the /question command"""
-    context.bot.send_message(chat_id=-1001096346677, text=str(update.message.text)+"\n#question")
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Какой у вас возник вопрос?")
+
+    return QUESTION
 
 
-def bot_feedback(update, context):
+def question_handler(update: Update, context: CallbackContext) -> int:
+    """Sends feedback or other commands to Admins chat"""
+    user = update.message.from_user
+    context.bot.send_message(chat_id=-1001096346677, text=str(user.id)+"\n"+str(update.message.text)+"\n#question")
+    update.message.reply_text('Ответим как только сможем')
+
+    return ConversationHandler.END
+
+
+def bot_feedback(update: Update, context: CallbackContext) -> int:
     """Handles the /bot_feedback command"""
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Как вам бот? \nЕс чо по боту можете писать в личку @temirlan_rsanov")
+
+    return BOT_FEEDBACK
+
+
+def bf_handler(update: Update, context: CallbackContext) -> int:
+    """Sends feedback or other commands to Admins chat"""
+    
     context.bot.send_message(chat_id=-1001096346677, text=str(update.message.text)+"\n#bot_feedback")
+    update.message.reply_text('Спасибо за фидбэк!')
+
+    return ConversationHandler.END
 
 
-def private(update, context):
+def private(update: Update, context: CallbackContext) -> int:
     """Handles the /private command"""
-    context.bot.send_message(chat_id=-1001096346677, text=str(update.message.text)+"\n#private")
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Сообщение полностью анонимное, не переживайте по этому поводу. Что вас беспокоит? Вам скоро ответит сам бот...")
+
+    return PRIVATE
+
+
+def private_handler(update: Update, context: CallbackContext) -> int:
+    """Sends feedback or other commands to Admins chat"""
+    user = update.message.from_user
+    context.bot.send_message(chat_id=-1001096346677, text=str(user.id)+"\n"+str(update.message.text)+"\n#private")
+    update.message.reply_text('Ожидайте пожалуйста. Думаю не должно занять много времени.')
+
+    return ConversationHandler.END
+
+
+def cancel(update: Update, context: CallbackContext) -> int:
+    """Cancels and ends the conversation."""
+    update.message.reply_text(
+        'Передумали значит...', reply_markup=ReplyKeyboardRemove()
+    )
+
+    return ConversationHandler.END
+
+
+def private_answer(update, context):
+    """Sends an answer to private message"""
+    reply_to_message = str(update.message.reply_to_message.text)
+    user_id = []
+    for element in reply_to_message:
+        user_id.append(element)
+        if element=="\n":
+            break
+    user_id = int(''.join(user_id))
+    context.bot.send_message(chat_id=user_id, text=str(update.message.text))
+
+
+def link(update, context):
+    """Handles the /link command"""
+    context.bot.send_message(chat_id=update.effective_chat.id, text="https://drive.google.com/drive/folders/1o0sQhnMmOwCmth2W6ftt7EdN-N5oB8Cx?usp=sharing")
 
 
 def ig(update, context):
@@ -201,9 +282,14 @@ def redirect(update, context):
     context.bot.send_message(chat_id=-1001248260165, text=update.message.text)
 
 
-def post(update, context):
-    """Redirect the user message."""
-    context.bot.send_message(chat_id=-1001248260165)
+def post_text(update, context):
+    """Post the President's message."""
+    context.bot.send_message(chat_id=-1001248260165, text=update.message.text)
+
+
+def post_photo(update, context):
+    """Post the President's message."""
+    context.bot.send_photo(chat_id=-1001248260165, photo=update.message.photo)
 
 
 def caps(update, context):
@@ -226,7 +312,7 @@ def main():
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
 
-    # test
+    # test test
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('fake_start', fake_start)],
         states={
@@ -238,7 +324,7 @@ def main():
             ],
             BIO: [MessageHandler(Filters.text & ~Filters.command, bio)],
         },
-        fallbacks=[CommandHandler('cancel', cancel)],
+        fallbacks=[CommandHandler('fake_cancel', fake_cancel)],
     )
 
     dp.add_handler(conv_handler)
@@ -247,16 +333,49 @@ def main():
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
     dp.add_handler(CommandHandler("ig", ig))
-    dp.add_handler(CommandHandler('suggestion', suggestion))
-    dp.add_handler(CommandHandler('complaint', complaint))
-    dp.add_handler(CommandHandler('question', question))
-    dp.add_handler(CommandHandler('bot_feedback', bot_feedback))
-    dp.add_handler(CommandHandler('private', private))
+    dp.add_handler(CommandHandler("link", link))
+    dp.add_handler(ConversationHandler(
+                                       entry_points=[CommandHandler('suggestion', suggestion)],
+                                       states={
+                                           SUGGESTION: [MessageHandler(Filters.text, suggestion_handler)],
+                                       },
+                                       fallbacks=[CommandHandler('cancel', cancel)],
+                                       ))
+    dp.add_handler(ConversationHandler(
+                                       entry_points=[CommandHandler('complaint', complaint)],
+                                       states={
+                                           COMPLAINT: [MessageHandler(Filters.text, complaint_handler)],
+                                       },
+                                       fallbacks=[CommandHandler('cancel', cancel)],
+                                       ))
+    dp.add_handler(ConversationHandler(
+                                       entry_points=[CommandHandler('question', question)],
+                                       states={
+                                           QUESTION: [MessageHandler(Filters.text, question_handler)],
+                                       },
+                                       fallbacks=[CommandHandler('cancel', cancel)],
+                                       ))
+    dp.add_handler(ConversationHandler(
+                                       entry_points=[CommandHandler('bot_feedback', bot_feedback)],
+                                       states={
+                                           BOT_FEEDBACK: [MessageHandler(Filters.text, bf_handler)],
+                                       },
+                                       fallbacks=[CommandHandler('cancel', cancel)],
+                                       ))
+    dp.add_handler(ConversationHandler(
+                                       entry_points=[CommandHandler('private', private)],
+                                       states={
+                                           PRIVATE: [MessageHandler(Filters.text, private_handler)],
+                                       },
+                                       fallbacks=[CommandHandler('cancel', cancel)],
+                                       ))
     
 
     # on noncommand i.e message - redirect the message on Telegram
-    dp.add_handler(MessageHandler(Filters.chat(514347981), post))
+    dp.add_handler(MessageHandler(Filters.chat(514347981), post_text))
+    dp.add_handler(MessageHandler(Filters.chat(514347981), post_photo))
     dp.add_handler(MessageHandler(Filters.text & (~Filters.chat([-1001248260165, -1001096346677, 514347981])), redirect))
+    dp.add_handler(MessageHandler(Filters.chat(-1001096346677) & Filters.reply, private_answer))
 
     # log all errors
     dp.add_error_handler(error)
